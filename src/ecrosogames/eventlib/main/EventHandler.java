@@ -1,7 +1,9 @@
 package ecrosogames.eventlib.main;
 
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * EGEventLib - A lightweight Java Event Managing System for handling your
@@ -26,6 +28,7 @@ import java.lang.annotation.RetentionPolicy;
  *
  */
 @Retention(RetentionPolicy.RUNTIME)
+@Target({ ElementType.METHOD })
 public @interface EventHandler {
 
 	/**
