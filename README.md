@@ -1,2 +1,4 @@
-# EGEventLib
-An EcrosoGames Java Event Library.
+EGEventLib
+==========
+
+A lightweight Java Event Managing System.
