@@ -1,4 +1,4 @@
-package ecrosogames.eventlib.testing;
+package ecrosogames.eventlib.testing.test0;
 
 import ecrosogames.eventlib.main.EventHandler;
 import ecrosogames.eventlib.main.EventListener;
