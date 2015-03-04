@@ -186,11 +186,21 @@ public class EventManager {
 	 *            The {@link Event} that should be called.
 	 * @param eventArgs
 	 *            The Constructor arguments for the wanted Constructor.
+	 * @return 
+	 * @return 
 	 */
-	public static void call(EventExecutor eventExecutor, Class<? extends Event> eventClass, Object... eventArgs) {
+	public static final <T extends Event> void call(EventExecutor<T> eventExecutor, Class<T> eventClass, Object... eventArgs) {
 		synchronized (LOCK) {
 			if (!checkIsEventClassRegistered(eventClass)) return;
-			if (!callAllRegisteredMethods(eventClass, eventArgs)) eventExecutor.execute();
+			try {
+				Class<?>[] constructorParameters = EventUtilities.getArrayOfClasses(eventArgs);
+				Constructor<?> constructor = eventClass.getDeclaredConstructor(constructorParameters);
+
+				T event = (T) eventClass.cast(constructor.newInstance(eventArgs));
+				if (!callAllRegisteredMethods(event)) eventExecutor.execute(event);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -211,7 +221,18 @@ public class EventManager {
 	 */
 	public static void call(Class<? extends Event> eventClass, Object... eventArgs) {
 		synchronized (LOCK) {
-			if (!checkIsEventClassRegistered(eventClass)) return;
+			try {
+				Event event = null;
+
+				Class<?>[] constructorParameters = EventUtilities.getArrayOfClasses(eventArgs);
+				Constructor<?> constructor = eventClass.getDeclaredConstructor(constructorParameters);
+
+				event = (Event) constructor.newInstance(eventArgs);
+
+				callAllRegisteredMethods(event);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -224,44 +245,37 @@ public class EventManager {
 	 *            The {@link Event} arguments.
 	 * @return Whether or not the {@link Event} has been cancelled.
 	 */
-	private static boolean callAllRegisteredMethods(Class<? extends Event> eventClass, Object... eventArgs) {
+	private static boolean callAllRegisteredMethods(Event event) {
 		try {
 			List<RegisteredEvent> lowPriority = PrioritizedEvents.getRegisteredEvents(EventPriority.Low);
 			List<RegisteredEvent> normalPriority = PrioritizedEvents.getRegisteredEvents(EventPriority.Normal);
 			List<RegisteredEvent> highPriority = PrioritizedEvents.getRegisteredEvents(EventPriority.High);
-
-			Event eventInstance = null;
-
-			Class<?>[] constructorParameters = EventUtilities.getArrayOfClasses(eventArgs);
-			Constructor<?> constructor = eventClass.getDeclaredConstructor(constructorParameters);
-
-			eventInstance = (Event) constructor.newInstance(eventArgs);
 
 			for (int i = 0; i < lowPriority.size(); i++) {
 				RegisteredEvent registeredEvent = lowPriority.get(i);
 				EventListener listener = registeredEvent.getListener();
 				Method method = registeredEvent.getMethod();
 
-				if (registeredEvent.getEventClass() != eventClass) continue;
-				method.invoke(listener, eventInstance);
+				if (registeredEvent.getEventClass() != event.getClass()) continue;
+				method.invoke(listener, event);
 			}
 			for (int i = 0; i < normalPriority.size(); i++) {
 				RegisteredEvent registeredEvent = normalPriority.get(i);
 				EventListener listener = registeredEvent.getListener();
 				Method method = registeredEvent.getMethod();
 
-				if (registeredEvent.getEventClass() != eventClass) continue;
-				method.invoke(listener, eventInstance);
+				if (registeredEvent.getEventClass() != event.getClass()) continue;
+				method.invoke(listener, event);
 			}
 			for (int i = 0; i < highPriority.size(); i++) {
 				RegisteredEvent registeredEvent = highPriority.get(i);
 				EventListener listener = registeredEvent.getListener();
 				Method method = registeredEvent.getMethod();
 
-				if (registeredEvent.getEventClass() != eventClass) continue;
-				method.invoke(listener, eventInstance);
+				if (registeredEvent.getEventClass() != event.getClass()) continue;
+				method.invoke(listener, event);
 			}
-			return eventInstance.isCancelled();
+			return event.isCancelled();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

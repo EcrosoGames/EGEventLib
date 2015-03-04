@@ -23,7 +23,7 @@ package ecrosogames.eventlib.main;
  * 
  * @author Michael Musgrove
  */
-public class Event {
+public abstract class Event {
 
 	private boolean cancelled;
 
