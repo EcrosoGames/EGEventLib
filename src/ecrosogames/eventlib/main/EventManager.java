@@ -187,7 +187,6 @@ public class EventManager {
 	 * @param eventArgs
 	 *            The Constructor arguments for the wanted Constructor.
 	 * @return 
-	 * @return 
 	 */
 	public static final <T extends Event> void call(EventExecutor<T> eventExecutor, Class<T> eventClass, Object... eventArgs) {
 		synchronized (LOCK) {
