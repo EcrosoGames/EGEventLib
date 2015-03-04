@@ -178,6 +178,8 @@ public class EventManager {
 	 * a constructor, or an exception will be thrown when searching for the
 	 * Constructor.
 	 * 
+	 * @see #call(Class, Object...)
+	 * 
 	 * @param eventExecutor
 	 *            What should execute if the {@link Event} is not cancelled.
 	 * @param eventClass
@@ -196,7 +198,11 @@ public class EventManager {
 	 * Calls the specified {@link Event} class. The Object arguments must match
 	 * a constructor, or an exception will be thrown when searching for the
 	 * Constructor. This method WILL NOT run any <code>execute</code> method
-	 * after all of the Methods for the {@link Event} have ran.
+	 * after all of the Methods for the {@link Event} have ran. If you'd like a
+	 * method that would run the wanted {@link EventExecutor}, look in the
+	 * <strong>See Also</strong> section.
+	 * 
+	 * @see #call(EventExecutor, Class, Object...)
 	 * 
 	 * @param eventClass
 	 *            The {@link Event} that should be called.
