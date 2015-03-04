@@ -1,6 +1,4 @@
-package ecrosogames.eventlib.main;
-
-/**
+/*
  * EGEventLib - A lightweight Java Event Managing System for handling your
  * program's events using Annotations. Copyright (C) 2015 Michael Musgrove
  * 
@@ -17,6 +15,10 @@ package ecrosogames.eventlib.main;
  * You should have received a copy of the GNU General Public License along with
  * this program. If not, see <http://www.gnu.org/licenses/>.
  * 
+ */
+package ecrosogames.eventlib.main;
+
+/**
  * A helper to distinguish the priorities for an {@link Event}. In essence, it
  * helps to establish what order each event method is called in.
  * 

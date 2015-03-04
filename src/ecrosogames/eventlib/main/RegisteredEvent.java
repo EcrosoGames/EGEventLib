@@ -1,8 +1,4 @@
-package ecrosogames.eventlib.main;
-
-import java.lang.reflect.Method;
-
-/**
+/*
  * EGEventLib - A lightweight Java Event Managing System for handling your
  * program's events using Annotations. Copyright (C) 2015 Michael Musgrove
  * 
@@ -19,6 +15,12 @@ import java.lang.reflect.Method;
  * You should have received a copy of the GNU General Public License along with
  * this program. If not, see <http://www.gnu.org/licenses/>.
  * 
+ */
+package ecrosogames.eventlib.main;
+
+import java.lang.reflect.Method;
+
+/**
  * An {@link Event} that has been registered.
  * 
  * @author Michael Musgrove

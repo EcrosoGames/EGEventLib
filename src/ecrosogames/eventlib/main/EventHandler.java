@@ -1,11 +1,4 @@
-package ecrosogames.eventlib.main;
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-/**
+/*
  * EGEventLib - A lightweight Java Event Managing System for handling your
  * program's events using Annotations. Copyright (C) 2015 Michael Musgrove
  * 
@@ -22,6 +15,15 @@ import java.lang.annotation.Target;
  * You should have received a copy of the GNU General Public License along with
  * this program. If not, see <http://www.gnu.org/licenses/>.
  * 
+ */
+package ecrosogames.eventlib.main;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+/**
  * The annotation to be the marker for when a method handles an {@link Event}.
  * 
  * @author Michael Musgrove
