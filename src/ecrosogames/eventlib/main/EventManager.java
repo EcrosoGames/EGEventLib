@@ -1,14 +1,4 @@
-package ecrosogames.eventlib.main;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.logging.Logger;
-
-/**
+/*
  * EGEventLib - A lightweight Java Event Managing System for handling your
  * program's events using Annotations. Copyright (C) 2015 Michael Musgrove
  * 
@@ -25,16 +15,31 @@ import java.util.logging.Logger;
  * You should have received a copy of the GNU General Public License along with
  * this program. If not, see <http://www.gnu.org/licenses/>.
  * 
- * A manager for handling each and every established {@link Event}.
+ */
+package ecrosogames.eventlib.main;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Logger;
+
+/**
+ * A manager for handling each and every established {@link Event}. This class
+ * is <code>synchronized</code>.
  * 
  * @author Michael Musgrove
  */
 public class EventManager {
 
-	private static volatile Logger logger = Logger.getLogger("EGEventManager");
+	private static final Object LOCK = new Object();
 
-	private static volatile List<Class<? extends Event>> eventClasses = new ArrayList<>();
-	private static volatile List<EventListener> registeredListeners = new ArrayList<>();
+	private static final Logger logger = Logger.getLogger("EGEventManager");
+
+	private static final List<Class<? extends Event>> eventClasses = new ArrayList<>();
+	private static final List<EventListener> registeredListeners = new ArrayList<>();
 
 	/**
 	 * Registers the specified {@link Event} class for handling its events.
@@ -44,12 +49,14 @@ public class EventManager {
 	 * @return <code>true</code> if the {@link Event} successfully registered,
 	 *         <code>false</code> if not.
 	 */
-	public static synchronized boolean registerEventClass(Class<? extends Event> event) {
-		if (!eventClasses.contains(event)) {
-			eventClasses.add(event);
-			return true;
+	public static boolean registerEventClass(Class<? extends Event> event) {
+		synchronized (LOCK) {
+			if (!eventClasses.contains(event)) {
+				eventClasses.add(event);
+				return true;
+			}
+			return false;
 		}
-		return false;
 	}
 
 	/**
@@ -62,24 +69,28 @@ public class EventManager {
 	 * @return <code>true</code> if the {@link Event} successfully unregistered,
 	 *         <code>false</code> if not.
 	 */
-	public static synchronized boolean unregisterEventClass(Class<? extends Event> event) {
-		if (eventClasses.contains(event)) {
-			eventClasses.remove(event);
-			return true;
+	public static boolean unregisterEventClass(Class<? extends Event> event) {
+		synchronized (LOCK) {
+			if (eventClasses.contains(event)) {
+				eventClasses.remove(event);
+				return true;
+			}
+			return false;
 		}
-		return false;
 	}
 
 	/**
 	 * Checks if the specified {@link Event} is registered.
 	 * 
-	 * @param event
+	 * @param eventClass
 	 *            The {@link Event} that you want to see is registered.
 	 * @return <code>true</code> if the {@link Event} is registered,
 	 *         </code>false</code> if not.
 	 */
-	public static synchronized boolean isEventClassRegistered(Class<? extends Event> event) {
-		return eventClasses.contains(event);
+	public static boolean isEventClassRegistered(Class<? extends Event> eventClass) {
+		synchronized (LOCK) {
+			return eventClasses.contains(eventClass);
+		}
 	}
 
 	/**
@@ -90,35 +101,49 @@ public class EventManager {
 	 * @return The list of {@link RegisteredEvent} objects that were
 	 *         successfully created in the {@link EventListener}.
 	 */
-	public static synchronized List<RegisteredEvent> registerEventListener(EventListener listener) {
-		List<RegisteredEvent> newlyRegistered = null;
-		if (!registeredListeners.contains(listener)) {
-			newlyRegistered = registerEventHandlers(listener);
+	public static List<RegisteredEvent> registerEventListener(EventListener listener) {
+		synchronized (LOCK) {
+			List<RegisteredEvent> newlyRegistered = null;
+			if (!registeredListeners.contains(listener)) {
+				newlyRegistered = registerEventHandlers(listener);
+			}
+			return newlyRegistered;
 		}
-		return newlyRegistered;
 	}
 
+	/**
+	 * Registers the {@link EventHandler} annotations from the
+	 * {@link EventListener}.
+	 * 
+	 * @param listener
+	 *            The {@link EventListener} to register the {@link EventHandler}
+	 *            <code>s</code> from.
+	 * @return The List of {@link RegisteredEvent}<code>s</code> from the
+	 *         registered {@link EventHandler} annotations.
+	 */
 	@SuppressWarnings("unchecked")
-	private static synchronized List<RegisteredEvent> registerEventHandlers(EventListener listener) {
-		List<RegisteredEvent> newlyRegistered = new ArrayList<>();
+	private static List<RegisteredEvent> registerEventHandlers(EventListener listener) {
+		synchronized (LOCK) {
+			List<RegisteredEvent> newlyRegistered = new ArrayList<>();
 
-		try {
-			Class<? extends EventListener> eventListenerClass = listener.getClass();
-			Method[] classMethods = eventListenerClass.getDeclaredMethods();
-			for (int i = 0; i < classMethods.length; i++) {
-				Method method = classMethods[i];
-				if (method.getParameterCount() != 1) continue;
-				EventHandler[] methodAnnotations = method.getDeclaredAnnotationsByType(EventHandler.class);
-				if (methodAnnotations.length == 0) continue;
-				EventHandler eventHandlerAnnotation = methodAnnotations[0];
-				EventPriority priority = eventHandlerAnnotation.value();
-				Class<? extends Event> eventClass = (Class<? extends Event>) method.getParameterTypes()[0];
-				PrioritizedEvents.addRegisteredEvent(new RegisteredEvent(listener, method, eventClass, priority));
+			try {
+				Class<? extends EventListener> eventListenerClass = listener.getClass();
+				Method[] classMethods = eventListenerClass.getDeclaredMethods();
+				for (int i = 0; i < classMethods.length; i++) {
+					Method method = classMethods[i];
+					if (method.getParameterCount() != 1) continue;
+					EventHandler[] methodAnnotations = method.getDeclaredAnnotationsByType(EventHandler.class);
+					if (methodAnnotations.length == 0) continue;
+					EventHandler eventHandlerAnnotation = methodAnnotations[0];
+					EventPriority priority = eventHandlerAnnotation.value();
+					Class<? extends Event> eventClass = (Class<? extends Event>) method.getParameterTypes()[0];
+					PrioritizedEvents.addRegisteredEvent(new RegisteredEvent(listener, method, eventClass, priority));
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
+			return newlyRegistered;
 		}
-		return newlyRegistered;
 	}
 
 	/**
@@ -131,11 +156,20 @@ public class EventManager {
 	 *         <code>false</code> because the {@link EventListener} was never
 	 *         registered.
 	 */
-	public static synchronized boolean unregisterEventListener(EventListener listener) {
-		if (registeredListeners.contains(listener)) {
-			registeredListeners.remove(listener);
-			return true;
+	public static boolean unregisterEventListener(EventListener listener) {
+		synchronized (LOCK) {
+			if (registeredListeners.contains(listener)) {
+				registeredListeners.remove(listener);
+				return true;
+			}
+			return false;
 		}
+	}
+
+	private static boolean checkIsEventClassRegistered(Class<? extends Event> eventClass) {
+		boolean registered = isEventClassRegistered(eventClass);
+		if (registered) return true;
+		logger.warning("EventManager.call(Class<? extends Event>) cancelled: event is not contained in the registered Event classes!");
 		return false;
 	}
 
@@ -145,19 +179,47 @@ public class EventManager {
 	 * Constructor.
 	 * 
 	 * @param eventExecutor
-	 *            What should execute when the {@link Event} is not cancelled.
+	 *            What should execute if the {@link Event} is not cancelled.
 	 * @param eventClass
 	 *            The {@link Event} that should be called.
 	 * @param eventArgs
 	 *            The Constructor arguments for the wanted Constructor.
 	 */
-	public static synchronized void call(EventExecutor eventExecutor, Class<? extends Event> eventClass, Object... eventArgs) {
-		try {
-			if (!eventClasses.contains(eventClass)) {
-				logger.warning("EventManager.call(Class<? extends Event>) cancelled: event is not contained in the registered Event classes!");
-				return;
-			}
+	public static void call(EventExecutor eventExecutor, Class<? extends Event> eventClass, Object... eventArgs) {
+		synchronized (LOCK) {
+			if (!checkIsEventClassRegistered(eventClass)) return;
+			if (!callAllRegisteredMethods(eventClass, eventArgs)) eventExecutor.execute();
+		}
+	}
 
+	/**
+	 * Calls the specified {@link Event} class. The Object arguments must match
+	 * a constructor, or an exception will be thrown when searching for the
+	 * Constructor. This method WILL NOT run any <code>execute</code> method
+	 * after all of the Methods for the {@link Event} have ran.
+	 * 
+	 * @param eventClass
+	 *            The {@link Event} that should be called.
+	 * @param eventArgs
+	 *            The Constructor arguments for the wanted Constructor.
+	 */
+	public static void call(Class<? extends Event> eventClass, Object... eventArgs) {
+		synchronized (LOCK) {
+			if (!checkIsEventClassRegistered(eventClass)) return;
+		}
+	}
+
+	/**
+	 * A method that calls all of the Registered Methods.
+	 * 
+	 * @param eventClass
+	 *            The {@link Event} class that is being called.
+	 * @param eventArgs
+	 *            The {@link Event} arguments.
+	 * @return Whether or not the {@link Event} has been cancelled.
+	 */
+	private static boolean callAllRegisteredMethods(Class<? extends Event> eventClass, Object... eventArgs) {
+		try {
 			List<RegisteredEvent> lowPriority = PrioritizedEvents.getRegisteredEvents(EventPriority.Low);
 			List<RegisteredEvent> normalPriority = PrioritizedEvents.getRegisteredEvents(EventPriority.Normal);
 			List<RegisteredEvent> highPriority = PrioritizedEvents.getRegisteredEvents(EventPriority.High);
@@ -193,11 +255,11 @@ public class EventManager {
 				if (registeredEvent.getEventClass() != eventClass) continue;
 				method.invoke(listener, eventInstance);
 			}
-
-			if (!eventInstance.isCancelled()) eventExecutor.execute();
+			return eventInstance.isCancelled();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		return false;
 	}
 
 	/**
@@ -208,7 +270,7 @@ public class EventManager {
 	 */
 	static class PrioritizedEvents {
 
-		private static volatile Map<EventPriority, List<RegisteredEvent>> prioritized = new HashMap<>();
+		private static final Map<EventPriority, List<RegisteredEvent>> prioritized = new HashMap<>();
 
 		static {
 			EventPriority[] values = EventPriority.values();
@@ -227,8 +289,10 @@ public class EventManager {
 		 *            The {@link EventPriority} of lists to grab.
 		 * @return The returned {@link} List of {@link RegisteredEvent} Objects.
 		 */
-		public static synchronized List<RegisteredEvent> getRegisteredEvents(EventPriority priority) {
-			return prioritized.get(priority);
+		public static List<RegisteredEvent> getRegisteredEvents(EventPriority priority) {
+			synchronized (LOCK) {
+				return prioritized.get(priority);
+			}
 		}
 
 		/**
@@ -244,9 +308,11 @@ public class EventManager {
 		 * @return <code>true</code> if the {@link RegisteredEvent} was
 		 *         successfully added, <code>false</code> if not.
 		 */
-		public static synchronized boolean addRegisteredEvent(RegisteredEvent registeredEvent) {
-			getRegisteredEvents(registeredEvent.getPriority()).add(registeredEvent);
-			return true;
+		public static boolean addRegisteredEvent(RegisteredEvent registeredEvent) {
+			synchronized (LOCK) {
+				getRegisteredEvents(registeredEvent.getPriority()).add(registeredEvent);
+				return true;
+			}
 		}
 	}
 }

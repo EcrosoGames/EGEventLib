@@ -1,6 +1,4 @@
-package ecrosogames.eventlib.main;
-
-/**
+/*
  * EGEventLib - A lightweight Java Event Managing System for handling your
  * program's events using Annotations. Copyright (C) 2015 Michael Musgrove
  * 
@@ -17,17 +15,25 @@ package ecrosogames.eventlib.main;
  * You should have received a copy of the GNU General Public License along with
  * this program. If not, see <http://www.gnu.org/licenses/>.
  * 
+ */
+package ecrosogames.eventlib.main;
+
+/**
  * Simple utilities to help make conversions and receive certain information.
  * 
  * @author Michael Musgrove
  */
 public class EventUtilities {
 
-	public static synchronized Class<?>[] getArrayOfClasses(Object... arrayOfObjects) {
-		Class<?>[] arrayOfClasses = new Class<?>[arrayOfObjects.length];
-		for (int i = 0; i < arrayOfClasses.length; i++) {
-			arrayOfClasses[i] = arrayOfObjects[i].getClass();
+	private static final Object LOCK = new Object();
+
+	public static Class<?>[] getArrayOfClasses(Object... arrayOfObjects) {
+		synchronized (LOCK) {
+			Class<?>[] arrayOfClasses = new Class<?>[arrayOfObjects.length];
+			for (int i = 0; i < arrayOfClasses.length; i++) {
+				arrayOfClasses[i] = arrayOfObjects[i].getClass();
+			}
+			return arrayOfClasses;
 		}
-		return arrayOfClasses;
 	}
 }
