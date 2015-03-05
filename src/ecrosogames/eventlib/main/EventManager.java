@@ -27,14 +27,11 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 /**
- * A manager for handling each and every established {@link Event}. This class
- * is <code>synchronized</code>.
+ * A manager for handling each and every established {@link Event}.
  * 
  * @author Michael Musgrove
  */
 public class EventManager {
-
-	private static final Object LOCK = new Object();
 
 	private static final Logger logger = Logger.getLogger("EGEventManager");
 
@@ -53,13 +50,11 @@ public class EventManager {
 	 *         <code>false</code> if not.
 	 */
 	public static boolean registerEventClass(Class<? extends Event> event) {
-		synchronized (LOCK) {
-			if (!eventClasses.contains(event)) {
-				eventClasses.add(event);
-				return true;
-			}
-			return false;
+		if (!eventClasses.contains(event)) {
+			eventClasses.add(event);
+			return true;
 		}
+		return false;
 	}
 
 	/**
@@ -73,13 +68,11 @@ public class EventManager {
 	 *         <code>false</code> if not.
 	 */
 	public static boolean unregisterEventClass(Class<? extends Event> event) {
-		synchronized (LOCK) {
-			if (eventClasses.contains(event)) {
-				eventClasses.remove(event);
-				return true;
-			}
-			return false;
+		if (eventClasses.contains(event)) {
+			eventClasses.remove(event);
+			return true;
 		}
+		return false;
 	}
 
 	/**
@@ -91,9 +84,7 @@ public class EventManager {
 	 *         </code>false</code> if not.
 	 */
 	public static boolean isEventClassRegistered(Class<? extends Event> eventClass) {
-		synchronized (LOCK) {
-			return eventClasses.contains(eventClass);
-		}
+		return eventClasses.contains(eventClass);
 	}
 
 	/**
@@ -107,14 +98,12 @@ public class EventManager {
 	 *         successfully created in the {@link EventListener}.
 	 */
 	public static List<RegisteredEvent> registerEventListener(EventListener listener) {
-		synchronized (LOCK) {
-			List<RegisteredEvent> newlyRegistered = null;
-			if (!registeredListeners.contains(listener)) {
-				newlyRegistered = registerEventHandlers(listener);
-				registeredListeners.add(listener.getClass());
-			}
-			return newlyRegistered;
+		List<RegisteredEvent> newlyRegistered = null;
+		if (!registeredListeners.contains(listener)) {
+			newlyRegistered = registerEventHandlers(listener);
+			registeredListeners.add(listener.getClass());
 		}
+		return newlyRegistered;
 	}
 
 	/**
@@ -129,27 +118,25 @@ public class EventManager {
 	 */
 	@SuppressWarnings("unchecked")
 	private static List<RegisteredEvent> registerEventHandlers(EventListener listener) {
-		synchronized (LOCK) {
-			List<RegisteredEvent> newlyRegistered = new ArrayList<>();
+		List<RegisteredEvent> newlyRegistered = new ArrayList<>();
 
-			try {
-				Class<? extends EventListener> eventListenerClass = listener.getClass();
-				Method[] classMethods = eventListenerClass.getDeclaredMethods();
-				for (int i = 0; i < classMethods.length; i++) {
-					Method method = classMethods[i];
-					if (method.getParameterCount() != 1) continue;
-					EventHandler[] methodAnnotations = method.getDeclaredAnnotationsByType(EventHandler.class);
-					if (methodAnnotations.length == 0) continue;
-					EventHandler eventHandlerAnnotation = methodAnnotations[0];
-					EventPriority priority = eventHandlerAnnotation.value();
-					Class<? extends Event> eventClass = (Class<? extends Event>) method.getParameterTypes()[0];
-					PrioritizedEvents.addRegisteredEvent(new RegisteredEvent(listener, method, eventClass, priority));
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
+		try {
+			Class<? extends EventListener> eventListenerClass = listener.getClass();
+			Method[] classMethods = eventListenerClass.getDeclaredMethods();
+			for (int i = 0; i < classMethods.length; i++) {
+				Method method = classMethods[i];
+				if (method.getParameterCount() != 1) continue;
+				EventHandler[] methodAnnotations = method.getDeclaredAnnotationsByType(EventHandler.class);
+				if (methodAnnotations.length == 0) continue;
+				EventHandler eventHandlerAnnotation = methodAnnotations[0];
+				EventPriority priority = eventHandlerAnnotation.value();
+				Class<? extends Event> eventClass = (Class<? extends Event>) method.getParameterTypes()[0];
+				PrioritizedEvents.addRegisteredEvent(new RegisteredEvent(listener, method, eventClass, priority));
 			}
-			return newlyRegistered;
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
+		return newlyRegistered;
 	}
 
 	/**
@@ -163,13 +150,11 @@ public class EventManager {
 	 *         registered.
 	 */
 	public static boolean unregisterEventListener(EventListener listener) {
-		synchronized (LOCK) {
-			if (registeredListeners.contains(listener)) {
-				registeredListeners.remove(listener.getClass());
-				return true;
-			}
-			return false;
+		if (registeredListeners.contains(listener)) {
+			registeredListeners.remove(listener.getClass());
+			return true;
 		}
+		return false;
 	}
 
 	/**
@@ -218,17 +203,15 @@ public class EventManager {
 	 * @return
 	 */
 	public static final <T extends Event> void call(EventExecutor<T> eventExecutor, Class<T> eventClass, Object... eventArgs) {
-		synchronized (LOCK) {
-			if (!checkIsEventClassRegistered(eventClass)) return;
-			try {
-				Class<?>[] constructorParameters = EventUtilities.getArrayOfClasses(eventArgs);
-				Constructor<?> constructor = eventClass.getDeclaredConstructor(constructorParameters);
+		if (!checkIsEventClassRegistered(eventClass)) return;
+		try {
+			Class<?>[] constructorParameters = EventUtilities.getArrayOfClasses(eventArgs);
+			Constructor<?> constructor = eventClass.getDeclaredConstructor(constructorParameters);
 
-				T event = (T) eventClass.cast(constructor.newInstance(eventArgs));
-				if (!callAllRegisteredMethods(event)) eventExecutor.execute(event);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			T event = (T) eventClass.cast(constructor.newInstance(eventArgs));
+			if (!callAllRegisteredMethods(event)) eventExecutor.execute(event);
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -249,19 +232,17 @@ public class EventManager {
 	 *            The Constructor arguments for the wanted Constructor.
 	 */
 	public static void call(Class<? extends Event> eventClass, Object... eventArgs) {
-		synchronized (LOCK) {
-			try {
-				Event event = null;
+		try {
+			Event event = null;
 
-				Class<?>[] constructorParameters = EventUtilities.getArrayOfClasses(eventArgs);
-				Constructor<?> constructor = eventClass.getDeclaredConstructor(constructorParameters);
+			Class<?>[] constructorParameters = EventUtilities.getArrayOfClasses(eventArgs);
+			Constructor<?> constructor = eventClass.getDeclaredConstructor(constructorParameters);
 
-				event = (Event) constructor.newInstance(eventArgs);
+			event = (Event) constructor.newInstance(eventArgs);
 
-				callAllRegisteredMethods(event);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			callAllRegisteredMethods(event);
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -341,9 +322,7 @@ public class EventManager {
 		 * @return The returned {@link} List of {@link RegisteredEvent} Objects.
 		 */
 		public static List<RegisteredEvent> getRegisteredEvents(EventPriority priority) {
-			synchronized (LOCK) {
-				return prioritized.get(priority);
-			}
+			return prioritized.get(priority);
 		}
 
 		/**
@@ -360,10 +339,8 @@ public class EventManager {
 		 *         successfully added, <code>false</code> if not.
 		 */
 		public static boolean addRegisteredEvent(RegisteredEvent registeredEvent) {
-			synchronized (LOCK) {
-				getRegisteredEvents(registeredEvent.getPriority()).add(registeredEvent);
-				return true;
-			}
+			getRegisteredEvents(registeredEvent.getPriority()).add(registeredEvent);
+			return true;
 		}
 	}
 }
