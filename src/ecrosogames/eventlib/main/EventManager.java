@@ -39,7 +39,10 @@ public class EventManager {
 	private static final Logger logger = Logger.getLogger("EGEventManager");
 
 	private static final List<Class<? extends Event>> eventClasses = new ArrayList<>();
-	private static final List<EventListener> registeredListeners = new ArrayList<>();
+	private static final List<Class<? extends EventListener>> registeredListeners = new ArrayList<>();
+
+	private EventManager() {
+	}
 
 	/**
 	 * Registers the specified {@link Event} class for handling its events.
@@ -94,7 +97,9 @@ public class EventManager {
 	}
 
 	/**
-	 * Registers a new {@link EventListener}.
+	 * Registers a new {@link EventListener}. If the class for the
+	 * {@link EventListener} has already been registered, it will not register
+	 * and it will return null.
 	 * 
 	 * @param listener
 	 *            The {@link EventListener} to register.
@@ -106,6 +111,7 @@ public class EventManager {
 			List<RegisteredEvent> newlyRegistered = null;
 			if (!registeredListeners.contains(listener)) {
 				newlyRegistered = registerEventHandlers(listener);
+				registeredListeners.add(listener.getClass());
 			}
 			return newlyRegistered;
 		}
@@ -159,13 +165,35 @@ public class EventManager {
 	public static boolean unregisterEventListener(EventListener listener) {
 		synchronized (LOCK) {
 			if (registeredListeners.contains(listener)) {
-				registeredListeners.remove(listener);
+				registeredListeners.remove(listener.getClass());
 				return true;
 			}
 			return false;
 		}
 	}
 
+	/**
+	 * Returns whether or not the specified {@link EventListener} class is
+	 * registered.
+	 * 
+	 * @param listenerClass
+	 *            The {@link EventListener} class that you want to check is
+	 *            registered or not.
+	 * @return
+	 */
+	public static boolean isEventListenerRegistered(Class<? extends EventListener> listenerClass) {
+		return registeredListeners.contains(listenerClass);
+	}
+
+	/**
+	 * Calls a check to {@link #isEventClassRegistered(Class)}. If not, it will
+	 * log a warning, and the {@link Event} won't be called.
+	 * 
+	 * @param eventClass
+	 *            The {@link Event} class to check is registered.
+	 * @return <code>true</code> if it is, <code>false</code> if not after it
+	 *         logs a warning.
+	 */
 	private static boolean checkIsEventClassRegistered(Class<? extends Event> eventClass) {
 		boolean registered = isEventClassRegistered(eventClass);
 		if (registered) return true;
@@ -176,7 +204,8 @@ public class EventManager {
 	/**
 	 * Calls the specified {@link Event} class. The Object arguments must match
 	 * a constructor, or an exception will be thrown when searching for the
-	 * Constructor.
+	 * Constructor. The {@link Event} will not run if the specified class is not
+	 * registered.
 	 * 
 	 * @see #call(Class, Object...)
 	 * 
@@ -186,7 +215,7 @@ public class EventManager {
 	 *            The {@link Event} that should be called.
 	 * @param eventArgs
 	 *            The Constructor arguments for the wanted Constructor.
-	 * @return 
+	 * @return
 	 */
 	public static final <T extends Event> void call(EventExecutor<T> eventExecutor, Class<T> eventClass, Object... eventArgs) {
 		synchronized (LOCK) {
@@ -209,7 +238,8 @@ public class EventManager {
 	 * Constructor. This method WILL NOT run any <code>execute</code> method
 	 * after all of the Methods for the {@link Event} have ran. If you'd like a
 	 * method that would run the wanted {@link EventExecutor}, look in the
-	 * <strong>See Also</strong> section.
+	 * <strong>See Also</strong> section. Also, the {@link Event} won't run if
+	 * the specified class isn't registered.
 	 * 
 	 * @see #call(EventExecutor, Class, Object...)
 	 * 
@@ -255,7 +285,7 @@ public class EventManager {
 				EventListener listener = registeredEvent.getListener();
 				Method method = registeredEvent.getMethod();
 
-				if (registeredEvent.getEventClass() != event.getClass()) continue;
+				if (registeredEvent.getEventClass() != event.getClass() || !registeredListeners.contains(listener.getClass())) continue;
 				method.invoke(listener, event);
 			}
 			for (int i = 0; i < normalPriority.size(); i++) {
@@ -263,7 +293,9 @@ public class EventManager {
 				EventListener listener = registeredEvent.getListener();
 				Method method = registeredEvent.getMethod();
 
-				if (registeredEvent.getEventClass() != event.getClass()) continue;
+				if (registeredEvent.getEventClass() != event.getClass() || !registeredListeners.contains(listener.getClass())) {
+					continue;
+				}
 				method.invoke(listener, event);
 			}
 			for (int i = 0; i < highPriority.size(); i++) {
@@ -271,7 +303,7 @@ public class EventManager {
 				EventListener listener = registeredEvent.getListener();
 				Method method = registeredEvent.getMethod();
 
-				if (registeredEvent.getEventClass() != event.getClass()) continue;
+				if (registeredEvent.getEventClass() != event.getClass() || !registeredListeners.contains(listener.getClass())) continue;
 				method.invoke(listener, event);
 			}
 			return event.isCancelled();
