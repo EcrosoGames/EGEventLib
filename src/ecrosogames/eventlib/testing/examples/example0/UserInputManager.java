@@ -15,7 +15,9 @@ public class UserInputManager {
 			System.out.print("> ");
 			String text = in.nextLine();
 
+			long lastMillis = System.currentTimeMillis();
 			EventManager.call(event -> {
+				System.out.println(System.currentTimeMillis() - lastMillis);
 				if (event.getText().equalsIgnoreCase("exit")) exit();
 				
 				System.out.println(event.getText());
