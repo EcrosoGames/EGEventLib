@@ -119,19 +119,20 @@ public class EventManager {
 	@SuppressWarnings("unchecked")
 	private static List<RegisteredEvent> registerEventHandlers(EventListener listener) {
 		List<RegisteredEvent> newlyRegistered = new ArrayList<>();
-
 		try {
 			Class<? extends EventListener> eventListenerClass = listener.getClass();
 			Method[] classMethods = eventListenerClass.getDeclaredMethods();
 			for (int i = 0; i < classMethods.length; i++) {
 				Method method = classMethods[i];
 				if (method.getParameterCount() != 1) continue;
+				if (!method.getParameterTypes()[0].isAssignableFrom(Event.class)) continue;
 				EventHandler[] methodAnnotations = method.getDeclaredAnnotationsByType(EventHandler.class);
 				if (methodAnnotations.length == 0) continue;
 				EventHandler eventHandlerAnnotation = methodAnnotations[0];
 				EventPriority priority = eventHandlerAnnotation.value();
 				Class<? extends Event> eventClass = (Class<? extends Event>) method.getParameterTypes()[0];
-				PrioritizedEvents.addRegisteredEvent(new RegisteredEvent(listener, method, eventClass, priority));
+				RegisteredEvent registeredEvent = new RegisteredEvent(listener, method, eventClass, priority);
+				PrioritizedEvents.addRegisteredEvent(registeredEvent);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
