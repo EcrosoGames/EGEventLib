@@ -24,7 +24,7 @@ package ecrosogames.eventlib.main;
  * @author Michael Musgrove
  */
 @FunctionalInterface
-public interface EventExecutor<T extends Event> {
+public interface EventCallback<T extends Event> {
 
 	/**
 	 * Executes the code that should run when an {@link Event} isn't cancelled.
