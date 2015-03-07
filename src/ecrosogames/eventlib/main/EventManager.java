@@ -202,7 +202,7 @@ public class EventManager {
 	 *            The Constructor arguments for the wanted Constructor.
 	 * @return
 	 */
-	public static final <T extends Event> void call(EventExecutor<T> eventExecutor, Class<T> eventClass, Object... eventArgs) {
+	public static final <T extends Event> void call(EventCallback<T> eventExecutor, Class<T> eventClass, Object... eventArgs) {
 		if (!checkIsEventClassRegistered(eventClass)) return;
 		try {
 			Class<?>[] constructorParameters = EventUtilities.getArrayOfClasses(eventArgs);
@@ -220,11 +220,11 @@ public class EventManager {
 	 * a constructor, or an exception will be thrown when searching for the
 	 * Constructor. This method WILL NOT run any <code>execute</code> method
 	 * after all of the Methods for the {@link Event} have ran. If you'd like a
-	 * method that would run the wanted {@link EventExecutor}, look in the
+	 * method that would run the wanted {@link EventCallback}, look in the
 	 * <strong>See Also</strong> section. Also, the {@link Event} won't run if
 	 * the specified class isn't registered.
 	 * 
-	 * @see #call(EventExecutor, Class, Object...)
+	 * @see #call(EventCallback, Class, Object...)
 	 * 
 	 * @param eventClass
 	 *            The {@link Event} that should be called.
