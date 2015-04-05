@@ -125,7 +125,7 @@ public class EventManager {
 			for (int i = 0; i < classMethods.length; i++) {
 				Method method = classMethods[i];
 				if (method.getParameterCount() != 1) continue;
-				if (!method.getParameterTypes()[0].isAssignableFrom(Event.class)) continue;
+				if (!Event.class.isAssignableFrom(method.getParameterTypes()[0])) continue;
 				EventHandler[] methodAnnotations = method.getDeclaredAnnotationsByType(EventHandler.class);
 				if (methodAnnotations.length == 0) continue;
 				EventHandler eventHandlerAnnotation = methodAnnotations[0];
