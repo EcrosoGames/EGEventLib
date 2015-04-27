@@ -19,8 +19,10 @@
 package ecrosogames.eventlib.main;
 
 /**
- * A simple tagger for classes that should be registered for Listening for any
- * type of {@link Event}.
+ * A simple tagger for classes that should contain methods that will be ready to
+ * be listeners for any type of {@link Event}. Methods that should listen for {@link Event} objects should be created as so:
+ * <br><br>
+ * <code>&lt;modifiers&gt; &lt;return_type&gt; &lt;method_name&gt;(&lt;? extends Event&gt;);</code>
  * 
  * @author Michael Musgrove
  */

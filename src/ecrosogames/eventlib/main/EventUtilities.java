@@ -25,15 +25,11 @@ package ecrosogames.eventlib.main;
  */
 public class EventUtilities {
 
-	private static final Object LOCK = new Object();
-
 	public static Class<?>[] getArrayOfClasses(Object... arrayOfObjects) {
-		synchronized (LOCK) {
-			Class<?>[] arrayOfClasses = new Class<?>[arrayOfObjects.length];
-			for (int i = 0; i < arrayOfClasses.length; i++) {
-				arrayOfClasses[i] = arrayOfObjects[i].getClass();
-			}
-			return arrayOfClasses;
+		Class<?>[] arrayOfClasses = new Class<?>[arrayOfObjects.length];
+		for (int i = 0; i < arrayOfClasses.length; i++) {
+			arrayOfClasses[i] = arrayOfObjects[i].getClass();
 		}
+		return arrayOfClasses;
 	}
 }

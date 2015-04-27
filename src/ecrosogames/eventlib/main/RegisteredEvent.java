@@ -40,6 +40,8 @@ public class RegisteredEvent {
 	 * @param method
 	 *            The {@link Method} that was registered to the
 	 *            {@link EventListener}.
+	 * @param eventClass
+	 *            The {@link Event} that the <code>method</code> is from.
 	 * @param priority
 	 *            The {@link EventPriority} of the RegisteredListener.
 	 */
