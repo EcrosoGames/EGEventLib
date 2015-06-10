@@ -20,6 +20,7 @@ package ecrosogames.eventlib.main;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -42,15 +43,17 @@ public class EventManager {
 	}
 
 	/**
-	 * Registers the specified {@link Event} class for handling its events.
+	 * Registers the specified {@link Event} class for handling its events. Note
+	 * that the class can not be {@code abstract}, otherwise the method will
+	 * {@code return false}.
 	 * 
 	 * @param event
 	 *            The {@link Event} that should be registered.
-	 * @return <code>true</code> if the {@link Event} successfully registered,
-	 *         <code>false</code> if not.
+	 * @return {@code true} if the {@link Event} successfully registered,
+	 *         {@code false} if not.
 	 */
 	public static boolean registerEventClass(Class<? extends Event> event) {
-		if (!eventClasses.contains(event)) {
+		if (!eventClasses.contains(event) && !Modifier.isAbstract(event.getModifiers())) {
 			eventClasses.add(event);
 			return true;
 		}
@@ -64,8 +67,8 @@ public class EventManager {
 	 * 
 	 * @param event
 	 *            The {@link Event} that should be unregistered.
-	 * @return <code>true</code> if the {@link Event} successfully unregistered,
-	 *         <code>false</code> if not.
+	 * @return {@code true} if the {@link Event} successfully unregistered,
+	 *         {@code false} if not.
 	 */
 	public static boolean unregisterEventClass(Class<? extends Event> event) {
 		if (eventClasses.contains(event)) {
@@ -80,8 +83,7 @@ public class EventManager {
 	 * 
 	 * @param eventClass
 	 *            The {@link Event} that you want to see is registered.
-	 * @return <code>true</code> if the {@link Event} is registered,
-	 *         </code>false</code> if not.
+	 * @return {@code true} if the {@link Event} is registered, }false} if not.
 	 */
 	public static boolean isEventClassRegistered(Class<? extends Event> eventClass) {
 		return eventClasses.contains(eventClass);
@@ -112,9 +114,9 @@ public class EventManager {
 	 * 
 	 * @param listener
 	 *            The {@link EventListener} to register the {@link EventHandler}
-	 *            <code>s</code> from.
-	 * @return The List of {@link RegisteredEvent}<code>s</code> from the
-	 *         registered {@link EventHandler} annotations.
+	 *            {@code s} from.
+	 * @return The List of {@link RegisteredEvent}{@code s} from the registered
+	 *         {@link EventHandler} annotations.
 	 */
 	@SuppressWarnings("unchecked")
 	private static List<RegisteredEvent> registerEventHandlers(EventListener listener) {
@@ -145,9 +147,9 @@ public class EventManager {
 	 * 
 	 * @param listener
 	 *            The {@link EventListener} to unregister.
-	 * @return <code>true</code> if the {@link EventListener} was successfully
-	 *         unregistered, or <code>false</code> if not. It may return
-	 *         <code>false</code> because the {@link EventListener} was never
+	 * @return {@code true} if the {@link EventListener} was successfully
+	 *         unregistered, or {@code false} if not. It may return
+	 *         {@code false} because the {@link EventListener} was never
 	 *         registered.
 	 */
 	public static boolean unregisterEventListener(EventListener listener) {
@@ -177,8 +179,8 @@ public class EventManager {
 	 * 
 	 * @param eventClass
 	 *            The {@link Event} class to check is registered.
-	 * @return <code>true</code> if it is, <code>false</code> if not after it
-	 *         logs a warning.
+	 * @return {@code true} if it is, {@code false} if not after it logs a
+	 *         warning.
 	 */
 	private static boolean checkIsEventClassRegistered(Class<? extends Event> eventClass) {
 		boolean registered = isEventClassRegistered(eventClass);
@@ -210,7 +212,7 @@ public class EventManager {
 			Constructor<?> constructor = eventClass.getDeclaredConstructor(constructorParameters);
 
 			T event = (T) eventClass.cast(constructor.newInstance(eventArgs));
-			if (!callAllRegisteredMethods(event)) eventExecutor.execute(event);
+			if (!sortAndCallAllRegisteredMethods(event)) eventExecutor.execute(event);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -219,11 +221,11 @@ public class EventManager {
 	/**
 	 * Calls the specified {@link Event} class. The Object arguments must match
 	 * a constructor, or an exception will be thrown when searching for the
-	 * Constructor. This method WILL NOT run any <code>execute</code> method
-	 * after all of the Methods for the {@link Event} have ran. If you'd like a
-	 * method that would run the wanted {@link EventCallback}, look in the
-	 * <strong>See Also</strong> section. Also, the {@link Event} won't run if
-	 * the specified class isn't registered.
+	 * Constructor. This method WILL NOT run any {@code execute} method after
+	 * all of the Methods for the {@link Event} have ran. If you'd like a method
+	 * that would run the wanted {@link EventCallback}, look in the <strong>See
+	 * Also</strong> section. Also, the {@link Event} won't run if the specified
+	 * class isn't registered.
 	 * 
 	 * @see #call(EventCallback, Class, Object...)
 	 * 
@@ -235,64 +237,63 @@ public class EventManager {
 	public static void call(Class<? extends Event> eventClass, Object... eventArgs) {
 		try {
 			Event event = null;
+			Constructor<?> constructor = null;
 
 			Class<?>[] constructorParameters = EventUtilities.getArrayOfClasses(eventArgs);
-			Constructor<?> constructor = eventClass.getDeclaredConstructor(constructorParameters);
+			constructor = eventClass.getDeclaredConstructor(constructorParameters);
 
-			event = (Event) constructor.newInstance(eventArgs);
+			event = eventClass.cast(constructor.newInstance(eventArgs));
 
-			callAllRegisteredMethods(event);
+			sortAndCallAllRegisteredMethods(event);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
 	/**
-	 * A method that calls all of the Registered Methods.
+	 * A method that sorts then all of the Registered Methods.
 	 * 
-	 * @param eventClass
-	 *            The {@link Event} class that is being called.
-	 * @param eventArgs
-	 *            The {@link Event} arguments.
+	 * @param event
+	 *            The {@link Event} that is being called.
 	 * @return Whether or not the {@link Event} has been cancelled.
 	 */
-	private static boolean callAllRegisteredMethods(Event event) {
+	private static boolean sortAndCallAllRegisteredMethods(Event event) {
 		try {
-			List<RegisteredEvent> lowPriority = PrioritizedEvents.getRegisteredEvents(EventPriority.Low);
-			List<RegisteredEvent> normalPriority = PrioritizedEvents.getRegisteredEvents(EventPriority.Normal);
-			List<RegisteredEvent> highPriority = PrioritizedEvents.getRegisteredEvents(EventPriority.High);
+			boolean cancelled;
 
-			for (int i = 0; i < lowPriority.size(); i++) {
-				RegisteredEvent registeredEvent = lowPriority.get(i);
-				EventListener listener = registeredEvent.getListener();
-				Method method = registeredEvent.getMethod();
+			cancelled = callRegisteredMethods(event, PrioritizedEvents.getRegisteredEvents(EventPriority.Low));
+			cancelled = callRegisteredMethods(event, PrioritizedEvents.getRegisteredEvents(EventPriority.Normal));
+			cancelled = callRegisteredMethods(event, PrioritizedEvents.getRegisteredEvents(EventPriority.High));
 
-				if (registeredEvent.getEventClass() != event.getClass() || !registeredListeners.contains(listener.getClass())) continue;
-				method.invoke(listener, event);
-			}
-			for (int i = 0; i < normalPriority.size(); i++) {
-				RegisteredEvent registeredEvent = normalPriority.get(i);
-				EventListener listener = registeredEvent.getListener();
-				Method method = registeredEvent.getMethod();
-
-				if (registeredEvent.getEventClass() != event.getClass() || !registeredListeners.contains(listener.getClass())) {
-					continue;
-				}
-				method.invoke(listener, event);
-			}
-			for (int i = 0; i < highPriority.size(); i++) {
-				RegisteredEvent registeredEvent = highPriority.get(i);
-				EventListener listener = registeredEvent.getListener();
-				Method method = registeredEvent.getMethod();
-
-				if (registeredEvent.getEventClass() != event.getClass() || !registeredListeners.contains(listener.getClass())) continue;
-				method.invoke(listener, event);
-			}
-			return event.isCancelled();
+			return cancelled;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return false;
+	}
+
+	/**
+	 * Calls all of the methods in the list of registeredEvents.
+	 * 
+	 * @param event
+	 *            The {@link Event} that is being called.
+	 * @param registeredEvents
+	 *            The {@link List} of {@link RegisteredEvent RegisteredEvents}
+	 *            that should be searched for the {@link Event} to call.
+	 * @return If the event is cancelled.
+	 * @throws Exception
+	 *             (various exceptions)
+	 */
+	private static boolean callRegisteredMethods(Event event, List<RegisteredEvent> registeredEvents) throws Exception {
+		for (int i = 0; i < registeredEvents.size(); i++) {
+			RegisteredEvent registeredEvent = registeredEvents.get(i);
+			EventListener listener = registeredEvent.getListener();
+			Method method = registeredEvent.getMethod();
+
+			if (registeredEvent.getEventClass() != event.getClass() || !registeredListeners.contains(listener.getClass())) continue;
+			method.invoke(listener, event);
+		}
+		return event.isCancelled();
 	}
 
 	/**
@@ -301,7 +302,7 @@ public class EventManager {
 	 * 
 	 * @author Michael Musgrove
 	 */
-	static class PrioritizedEvents {
+	private static class PrioritizedEvents {
 
 		private static final Map<EventPriority, List<RegisteredEvent>> prioritized = new HashMap<>();
 
@@ -336,8 +337,8 @@ public class EventManager {
 		 * @param registeredEvent
 		 *            The {@link RegisteredEvent} to add to the {@link List}
 		 *            based on the {@link EventPriority}.
-		 * @return <code>true</code> if the {@link RegisteredEvent} was
-		 *         successfully added, <code>false</code> if not.
+		 * @return {@code true} if the {@link RegisteredEvent} was successfully
+		 *         added, {@code false} if not.
 		 */
 		public static boolean addRegisteredEvent(RegisteredEvent registeredEvent) {
 			getRegisteredEvents(registeredEvent.getPriority()).add(registeredEvent);
